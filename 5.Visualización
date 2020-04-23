@@ -1,0 +1,356 @@
+---
+title: "5.Introducción a la visualización de datos en R"
+output: 
+  html_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Introducción
+
+Uno de los grandes potenciales de R es su capacidad para generar gráficos, figuras, visualizaciones de datos complejas, diversas y adaptadas a cualquier tipo de situación y requerimiento. Todo ello sin tener que recurrir a ediciones posteriores de las figuras en otros programas, es decir, sacando imágenes en cualquier formato listas para su publicación desde nuestras líneas de código. Y por supuesto, aprovechando la inmensa comunidad de usuarios de R que han aportado todo tipo de soluciones, variaciones y creaciones para la visualización de datos.
+
+Aunque el principal atractivo ahora mismo reside en utilizar la visualización del paquete ggplot y sus extensiones, como parte del universeo tidyverse, y que veremos con mucha más profundidad en el siguiente tema, es necesario conocer cuál es el punto de partida básico en el que iniciarnos.
+
+Vamos a empezar con los primeros gráficos con R. Para ello vamos a cargar algunos datos para el trabajo. El primero lo cargaremos con la función `data()` llamado "AirPassengers", que ya está precargado y contiene datos de pasajeros a lo largo de una serie de años. El segundo es un archivo con datos de pacientes con colesterol ("chol.txt") y disponéis de él en los materiales descargables.
+
+##Carga y primeras visualizaciones de archivos
+Para ello, vamos a usar la función `data(AirPassengers)` para cargar nuestro archivo de datos de pasajeros, que nos creará un objeto con ese mismo nombre. Con la función `str()`podemos ver qué estructura tienen nuestros datos y veremos que es una especie de matriz, que expresa datos mensuales de viajeros. Es la forma que toman las series temporales ("ts") en R. La función `class()` lo confirma.
+ 
+```{r preparacion, echo=TRUE}
+data("AirPassengers")
+class(AirPassengers)
+AirPassengers
+```
+
+A continuación vamos a utilizar la función fundamental de los gráficos de R, que es `plot()`. Esta función va a ser capaz de reconocer el tipo de datos del objeto que le introducimos como parámetro y lanzar un tipo de gráfico por defecto. En el caso de una serie temporal por meses como el nuestro, nos lanzará un gráfico de líneas que nos dice cómo evoluciona la cantidad de pasajeros a lo largo del tiempo.
+
+```{r plot airpassengers, echo=TRUE}
+plot(AirPassengers)
+```
+
+Vamos a cargar a continuación el archivo `chol.txt`. Para ello, le decimos al cargar el archivo la ruta completa donde está el archivo, puesto que en mi caso no está en el mismo directorio de trabajo. También vamos a ver con `str()`qué variables tienen estos datos de colesterol (peso, edad, si fuman...).
+
+
+```{r carga colesterol, echo=TRUE}
+#dir() con esta instrucción compruebo que no tengo el archivo chol.text en el directorio en el que estoy.
+chol<-read.table("C:/Users/Alejandro/Documents/ISM/Datasets/chol.txt",header=TRUE) #le especifico la carpeta donde lo tengo.
+str(chol)
+```
+
+La función `plot()`nos va a funcionar de manera automática también con este objeto, sacándonos diagramas de dispersión de todas las variables entre ellas, de manera que podemos visualizar muchas relaciones entre variables de una sola vez.
+
+```{r plot chol, echo=TRUE}
+plot(chol)
+```
+
+#Diagramas de barras
+
+Los diagramas de barras son útiles para visualiar conteos de casos en algunas variables de tipo cualiativos, por ejemplo, número de mujeres y hombres en un conjunto de datos, o en este caso, como vamos a ver, el número de casos por tipo sanguíneo de nuestros datos de colesterol.
+
+Podemos ver en primer lugar cómo son los datos, confirmando que hay cuatro tipos sanguíneos pero siendo difícil saber cuántos hay de cada uno:
+
+```{r diagramas de barras, echo=TRUE}
+chol$BLOOD
+```
+
+Podemos hacer un conteo de cuántos pacientes tenemos de cada tipo sanguíneo con la función `table()`. Esta función toma una variable (en este caso BLOOD) y devuelve el número de casos en forma de tabla, también llamada tabla de contingencia en algunos casos. Se trataría de un tipo de objeto "table", que es diferente de uno tipo dataframe.
+
+```{r diagramas de barras2}
+table(chol$BLOOD)
+```
+
+La función `barplot()` puede tomar un objeto de tipo "table" para construir una figura de barras que representa el conteo de casos de cada tipo.
+
+```{r diagramas de barras3}
+sangre<-table(chol$BLOOD)
+barplot(sangre)
+```
+
+#Diagramas de dispersión
+
+Los diagramas de dispersión o _scatterplots_ son maneras de visualizar las relaciones entre dos variables de tipo cuantitativo, cuyos datos se colocan en los ejes x e y. La función genérica `plot()`nos permite generar estos gráficos, introduciendo como parámetros dos variables cuantitativas de un marco de datos, o dos vectores de la misma longitud. Si no lo especificamos, la primera variable que metamos irá al eje x, la segunda al y. Vamos a ver la relación entre la edad y la concentración de colesterol:
+
+```{r scatter 1, echo=TRUE}
+
+plot(chol$AGE, chol$CHOL)
+
+```
+
+Se puede apreciar una tendencia positiva en la relación entre las variables más o menos ligera pero visible que nos indicaría la tendencia, aunque evidentemente no es sino un diagnóstico visual que en absoluto sustituye un análisis estadístico. Sin embargo, podemos dibujar una línea de tendencia de estos datos con la función `abline()` que utilizará una regresión estadística simple de los datos para dibujar dicha línea. Esto nos permite introducir la sintaxis de modelos estadísticos de R, donde tenemos que especificar cómo una variable (dependiente o variable respuesta) variaría en función de otra (independiente o predictora). El elemento clave es `~` (en el teclado: Altgr+4). Este símbolo nos indica qué variable dependiente estamos modelizando en función de otra. Por ejemplo: `chol$AGE~chol$CHOL`nos indicaría en una función que nos construye un modelo estadístico que AGE es la variable dependiente y CHOL la independiente. Si utilizamos esta expresión en una regresión lineal que construye una función matemática que describe cómo el nivel de colesterol variaría con la edad, tendríamos la siguiente expresión: lm(`chol$AGE~chol$CHOL`). Vamos a usar esta regresión para que abline nos dibuje la línea de tendencia en ese modelo.
+
+```{r scatter 2, echo=TRUE}
+plot(chol$AGE, chol$CHOL)
+abline(lm(chol$AGE~chol$CHOL))
+```
+
+Podemos cambiar el tipo de modelo que usamos. Por ejemplo, un modelo de tipo 'lowess' utiliza otra aproximación no lineal más flexible para describir comportamientos de los datos que no se ajustan bien a una recta. Lo podemos aplicar dentro de la función `lines()`. Pero de paso vamos a aprovechar para cambiar la línea de color, con el parámetro col:
+
+```{r scatter 3,echo=TRUE}
+plot(chol$AGE,chol$CHOL)
+lines(lowess(chol$AGE~chol$CHOL),col="blue")
+```
+
+Finalmente, vamos a utilizar una de las variables factoriales, en este caso MORT, para que según el valor que tome cada paciente para esta variable (vivo o muerto), cada punto tenga un color u otro. Nuevamente es con el parámetro col.
+
+
+```{r scatter 4,echo=TRUE}
+plot(chol$AGE,chol$CHOL, col=chol$MORT)
+```
+
+Pero además podemos variar la forma de los puntos con el parámetro pch. En este caso mediante un código numérico (disponible en la ayuda) especificaríamos la forma que quermeos que tengan nuestros puntos (cuadrados, círculos, estrellas...). Vamos a especificar pch=16 para comprobar qué ocurre:
+
+```{r}
+plot(chol$AGE,chol$CHOL, col=chol$MORT,pch=16)
+```
+#Boxplots o diagramas de caja y bigotes
+
+##Boxplots simples
+
+Los diagramas de caja y bigotes, conocidos como boxplots, son figuras que sirven para visualizar rápidamente algunos datos relevantes para la distribución de nuestros datos, como la mediana o la dispersión, y especialmente si podemos comparar entre grupos.
+
+La podemos llamar con la función `boxplot()`
+
+```{r diagramas de , echo=TRUE}
+
+boxplot(chol$AGE)
+
+
+```
+
+##Boxplots por factores
+
+Para hacer comparaciones por grupos, tenemos que especificarle a la función no solo la variable que estamos explorando visualmente, si no también en función de qué factor queremos que lo agrupe. Para ello tenemos que volver a utilizar el símbolo `~` para designar la variable por grupos. En el siguiente ejemplo vamos a generar un boxplot por cada tipo de fumador que tienen nuestros datos (variable SMOKE): no fumador, en pipa o en cigarro.
+ 
+```{r boxplot2, echo=TRUE}
+boxplot(chol$CHOL~chol$SMOKE)
+
+```
+
+También lo podemos ver respecto a los cuatro tipos sanguíneos:
+
+```{r}
+boxplot(chol$CHOL~chol$BLOOD)
+```
+
+
+Vamos realizar también la misma comparación de los niveles de colesterol, pero esta vez entre pacientes vivos y muertos (variable MORT). pero antes, con `table()`vamos a ver cuántos datos hay por cada una de las dos categorías:
+
+
+```{r}
+table(chol$MORT)
+boxplot(chol$CHOL~chol$MORT)
+```
+
+Dado que los datos apuntan a una ligera diferencia, hay una manera de visualizar si un test nos daría una diferencia estadísticamente significativa. El parámetro notch (nudo) que por defecto es FALSE, nos dibuja un estrangulamiento entre el rango intercuartil y la mediana. Si no hay solapamiento en esa zona estrangulada entre dos grupos, seguramente tengamos una significativa en un test.
+
+
+```{r}
+boxplot(chol$CHOL~chol$MORT,notch=TRUE)
+```
+
+##Personalizando la función.
+
+Hay que recordar que los mismos parámetros para personalizar los gráficos que hemos visto para las funciones principales funcionarán aquí también. Si por ejemplo queremos utilizar diferentes colores de relleno en función del grupo, podemos utilizar col, para especificar bien un solo color o bien un color diferente según el grupo.
+
+```{r}
+boxplot(chol$CHOL~chol$MORT,notch=TRUE,col="red") #dos boxplots de color rojo.
+boxplot(chol$CHOL~chol$MORT,notch=TRUE,col=chol$MORT) #uno de cada color)
+```
+
+
+#Gráficos de líneas.
+
+Quedaría pendiente cómo realizar gráficos con líneas que permitan visualizar la evolución de un determinado fenómeno o el comportamiento de una función matemática. Vamos a realizar unos datos ficticios. Para ello vamos a generar una secuencia de números con `seq()` y el cuadrado de cada número de la primera secuencia generada:
+
+```{r}
+secuencia<-seq(1:36)
+secuencia2<-secuencia*secuencia #También se puede expresar como secuencia^2.
+```
+
+Si únicamente ahora le pedimos que nos saque un gráfico relacionando estas dos secuencias, obtendremos un diagrama de dispersión, porque es la opción por defecto:
+
+```{r}
+plot(secuencia,secuencia2)
+```
+
+Por lo tanto, hay que especificarle un parámetro más, el parámetro `type`. Para especificarle que es de tipo línea, utilizaremos la letra "l"":
+```{r}
+plot(secuencia,secuencia2,type="l")
+```
+
+Podemos generar otro tipo de líneas diferentes con especificando otros símbolos para el parámetro `type`.
+
+```{r}
+plot(secuencia,secuencia2,type="s")
+plot(secuencia,secuencia2,type="S")
+plot(secuencia,secuencia2,type="p")
+```
+
+Finalmente, es posible volver a cambiar el color por supuesto. Esta vez en vez de introducir el nombre de un color en el parámetro `col`vamos a introducir un código hexadecimal para mostrar otra manera por la cual podemos introducir el color.
+
+```{r}
+plot(secuencia,secuencia2,type="p",col="purple")
+plot(secuencia,secuencia2,type="p",col="#F00000")
+```
+
+
+#Histogramas
+
+Se realizan con la función `hist()`. Para realizar un histograma, que es un gráfico que ilustra la variación de una sola variable, tenemos que especificar qué variable es. Por ello, una instrucción como `hist(chol)` daría un error. En cambio la siguiente, donde especificamos que es la variable AGE de nuestro marco de datos chol, daría un histograma.
+
+
+```{r}
+hist(chol$AGE)
+```
+
+Los colores, el título, y el número de clases en las que se divide la distribución de los datos queda siempre delimitada por el programa si no le especificamos el aspecto estético de nuestro gráfico. Es posible que la anchura de las clases no representen bien el grado de detalle en el que queremos visualizar nuestra distibución. Para ello, podemos especificar muchos, muchísimos parámetros gráficos de nuestro gráfico:
+
+```{r histogramas personalizados, fit.align="center"}
+hist(chol$AGE,
+     main="Distribución de edad", #añadimos un título
+     xlab="Edad", #añadimos la etiqueta o nombre de la columna x
+     ylab="Frecuencia", #el de la columna y
+     border="blue", #especificamos el borde de las columnas
+     col="green", #el color de relleno de las columnas
+     xlim=c(25,55), #el límite del eje x
+     breaks=18 #el número de clases.
+     )
+
+
+hist(chol$AGE,
+     main="Distribución de edad",
+     xlab="Edad",
+     ylab="Frecuencia",
+     border="blue",
+     col="green",
+     xlim=c(25,55),
+     breaks=11
+)
+
+```
+
+
+#Densidad
+```{r density plot}
+densidad<-density(chol$AGE)
+densidad
+plot(densidad)
+```
+
+#Combinación de gráficos
+
+En algunas ocasiones necesitaremos combinar en una sola página diferentes gráficos. La función `par()` nos permite avisar a R que antes de desplegar los gráficos que vayamos a crear, nos cree en la ventana una cuadrícula donde se van a ir colocando. El parámetro `mfrow` nos permite crear mediante un vector el número de filas y columnas, rellenando fila a fila, mientras que el parámetro `mfcol` hará lo mismo pero rellenando en vertical, columna a columna. 
+
+Podéis comprobarlo ejecutando primero la instrucción `par()` con uno u otro parámetro para ver la diferencia:
+
+```{r}
+par(mfrow=c(2,3))
+plot(chol$AGE,chol$CHOL)
+plot(chol$HEIGHT,chol$WEIGHT)
+plot(chol$HEIGHT,chol$AGE)
+hist(chol$HEIGHT,main="Histograma")
+hist(chol$HEIGHT,main="Histograma",col="blue")
+plot(density(chol$AGE))
+
+```
+
+```{r}
+par(mfcol=c(2,3))
+plot(chol$AGE,chol$CHOL)
+plot(chol$HEIGHT,chol$WEIGHT)
+plot(chol$HEIGHT,chol$AGE)
+hist(chol$HEIGHT,main="Histograma")
+hist(chol$HEIGHT,main="Histograma",col="blue")
+plot(density(chol$AGE))
+```
+
+#Lattice
+
+Lattice es una alternativa para generación de gráficos que ha tenido cierto recorrido en R. Aunque ha perdido peso en su uso por efecto de ggplot, conviene conocerlo puesto que aún se usa en muchos paquetes, blogs y archivos de ayuda, incluso en cursos. El mundo de la biodiversidad no es ajeno precisamente a él.
+La sintaxis típica es la siguiente:
+
+```{r, eval=FALSE}
+graph_type(formula, data=)
+
+```
+graph_type se sustituye por una función concreta de la lista disponible en el enlace (!https://www.statmethods.net/advgraphs/trellis.html). La fórmula, que no es como las que hemos visto hasta ahora nos dice qué variable es la que hay que representar, según otras. ~x|A significa que hay que representar la variable cuantitativa x para cada uno de los valores de la variable factorial A. y~x | A*B significa representar la relación entre dos variables cuantitativas de manera separada en cada una de las combinaciones de dos variables factoriales.
+
+Vamos en primer lugar a instalar el paquete y cargar la librería. En este caso, latticeExtra nos cargará tanto la librería básica como un paquete con funcionalidades añadidad.
+
+```{r, eval =FALSE}
+install.packages("latticeExtra")
+library(latticeExtra)
+
+```
+
+```{r include=FALSE}
+library(latticeExtra)
+```
+
+
+Vamos a cargar el dataset precargado iris, que contiene los datos de longitud y anchura de los pétalos y sépalos de tres especies de Lirios del género Iris, y que son uno de los datasets más famosos en una sección de la ciencia de datos dedicada a la clasificación. Las tres especies son Iris setosa, Iris versicolor, I. virginica. data= nos sirve para decirle dónde tiene que buscar los nombres de las variables.
+
+```{r}
+
+data(iris)
+str(iris)
+
+```
+
+
+Vamos a ver histogramas de la variable de longitud de los sépalos de cada una de las tres especies. Usamos la función `histogram()`. Como solo tenemos una variable, no dos, empezamos la fórmula directamente con el símbolo `~`.
+
+```{r}
+histogram(~Sepal.Length|Species,data=iris)
+
+```
+
+`bwplot()` y `densityplot()` nos permiten realizar también visualizaciones de la distribución de los datos: 
+
+```{r}
+bwplot(~Sepal.Length|Species,data=iris)
+
+densityplot(~Sepal.Length|Species,data=iris)
+```
+
+La función `xyplot()` nos permite representar un diagrama de dispersión. Primero vamos a ver un ejemplo con todos los datos, y luego otro especie por especie. La fórmula cambia. No empezamos con la ~ sino con la variable que irá en el eje de las y, como si se tratara la variable dependiente de un modelo estadístico.  
+
+
+```{r}
+xyplot(Petal.Length~Sepal.Length,data=iris)
+xyplot(Petal.Length~Sepal.Length|Species,data=iris)
+```
+
+La función `splom()` permite hacer una matriz de diagramas de dispersión, que nos relaciona las variables cuantitativas entre ellas.
+
+```{r}
+splom(iris)
+```
+
+Para personalizar los gráficos, acudimos a los parámetros habituales ya vistos. Sin embargo, atención al color: lo podemos determinar a través del parámetro *group*. Si queremos ponerlo con el parámetro habitual col, tenemos que decirle en qué objeto tenemos nuestra variable, si no, no lo reconocerá. Fijaos en el cambio de color.
+
+```{r}
+xyplot(Petal.Length~Sepal.Length|Species,data=iris,
+       main="Relación morfométrica \n en Iris",
+       xlab="Longitud del sépalo",ylab="Longitud del pétalo")
+
+xyplot(Petal.Length~Sepal.Length,data=iris,
+       main="Relación morfométrica \n en Iris",
+       xlab="Longitud del sépalo",ylab="Longitud del pétalo",group=Species)
+
+xyplot(Petal.Length~Sepal.Length,data=iris,
+       main="Relación morfométrica \n en Iris",
+       xlab="Longitud del sépalo",ylab="Longitud del pétalo",col=iris$Species)
+
+```
+
+Finalmente, la función `show.settings()` nos muestra un resumen gráfico de las posibilidades del paquete para personalizar los gráficos:
+
+```{r}
+show.settings()
+```
